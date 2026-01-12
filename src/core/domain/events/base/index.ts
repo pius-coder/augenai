@@ -1,3 +1,6 @@
 // Base events exports
-export { DomainEvent, BaseDomainEvent } from './DomainEvent';
-export { EventMetadata, EventMetadataBuilder } from './EventMetadata';
+export type { DomainEvent } from './DomainEvent';
+export { BaseDomainEvent } from './DomainEvent';
+
+export type { EventMetadata } from './EventMetadata';
+export { EventMetadataBuilder } from './EventMetadata';

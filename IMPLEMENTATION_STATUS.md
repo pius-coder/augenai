@@ -47,8 +47,9 @@ This document tracks the implementation progress of the 403-file system architec
 ## 🚧 In Progress / TODO
 
 ### ÉTAPE 3: Ports (Interfaces)
-- [ ] Repository interfaces (8 files)
-- [ ] Service interfaces (10+ files)
+- [x] Repository interfaces (8 files)
+- [x] Service interfaces (10+ files)
+- [x] Event/Queue/Streaming interfaces (8 files)
 
 ### ÉTAPE 4: Infrastructure
 - [ ] Prisma repositories (8 implementations)
@@ -91,7 +92,7 @@ This document tracks the implementation progress of the 403-file system architec
 
 - **Foundation**: ~100% complete (5/5 files)
 - **Domain Layer**: ~100% complete (40/40 files)
-- **Ports**: 0% complete (0/18 files)
+- **Ports**: ~100% complete (33/33 files)
 - **Infrastructure**: 0% complete (0/30 files)
 - **Use Cases**: 0% complete (0/24 files)
 - **Application**: 0% complete (0/7 files)
@@ -99,16 +100,16 @@ This document tracks the implementation progress of the 403-file system architec
 - **API Routes**: 0% complete (0/15 files)
 - **UI**: 0% complete (0/30 files)
 
-**Total Progress**: ~20% complete (45/174 core files estimated)
+**Total Progress**: ~45% complete (78/174 core files estimated)
 
 ## 🎯 Next Priority Files
 
-1. **Repository Ports** - Interface definitions (8 files)
-2. **Service Ports** - Interface definitions for external services (10+ files)
-3. **Prisma Repositories** - Data access layer (8 files)
-4. **Key Use Cases** - Business logic (5-10 critical ones)
-5. **DI Container** - Wire everything together (5 files)
-6. **API Routes** - Entry points (10-15 files)
+1. **Prisma Repositories** - Data access layer (8 files)
+2. **External Services** - AI, TTS, parsing, storage, audio processing (6+ services)
+3. **Queue System** - In-memory/Redis queue + workers (4 files)
+4. **Event System** - Event bus + handlers (3 files)
+5. **SSE Streaming** - Real-time updates to UI (3 files)
+6. **Key Use Cases** - Business logic (5-10 critical ones)
 
 ## 📝 Notes
 

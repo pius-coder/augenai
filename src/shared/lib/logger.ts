@@ -116,10 +116,11 @@ class Logger {
     };
 
     if (error) {
+      const errorWithCode = error as Error & { code?: string };
       entry.error = {
         message: error.message,
         stack: error.stack,
-        code: (error as any).code,
+        code: errorWithCode.code,
       };
     }
 
