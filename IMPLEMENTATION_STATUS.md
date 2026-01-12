@@ -13,7 +13,7 @@ This document tracks the implementation progress of the 403-file system architec
 
 ### ÉTAPE 2A: Value Objects (Domain Layer)
 - [x] `core/domain/value-objects/JobStatus.ts` - Job status enum + helpers
-- [x] `core/domain/value-objects/ItemStatus.ts` - Item status enum + helpers  
+- [x] `core/domain/value-objects/ItemStatus.ts` - Item status enum + helpers
 - [x] `core/domain/value-objects/ChunkStatus.ts` - Chunk status enum + helpers
 - [x] `core/domain/value-objects/CSVRow.ts` - CSV row validation class
 - [x] `core/domain/value-objects/TextChunk.ts` - Text chunk (max 2000 chars)
@@ -21,12 +21,23 @@ This document tracks the implementation progress of the 403-file system architec
 - [x] `core/domain/value-objects/VoiceSettings.ts` - Voice configuration
 - [x] `core/domain/value-objects/AudioMetadata.ts` - Audio metadata class
 
-### ÉTAPE 2B: Events (Base + Some Specific)
+### ÉTAPE 2B: Events (All Complete)
 - [x] `core/domain/events/base/EventMetadata.ts` - Event metadata structure
 - [x] `core/domain/events/base/DomainEvent.ts` - Base event interface + class
-- [x] `core/domain/events/job/JobCreatedEvent.ts`
-- [x] `core/domain/events/job/JobStartedEvent.ts`
-- [x] `core/domain/events/job/JobCompletedEvent.ts`
+- [x] Job events (8 total): JobCreated, JobStarted, JobCompleted, JobCancelled, JobFailed, JobPaused, JobProgressUpdated, JobResumed
+- [x] Item events (15 total): ItemCreated, ItemValidationStarted, ItemValidationCompleted, TextGenerationStarted, TextGenerationProgress, TextGenerationCompleted, TextRefinementStarted, TextRefinementCompleted, TextChunkingCompleted, AudioGenerationStarted, AudioChunkGenerated, AudioMergeStarted, AudioMergeCompleted, ItemCompleted, ItemFailed
+- [x] Chunk events (4 total): ChunkCreated, ChunkProcessingStarted, ChunkProcessingCompleted, ChunkFailed
+- [x] Error events (3 total): ErrorOccurred, RateLimitHit, RetryScheduled
+
+### ÉTAPE 2C: Entities (All Complete)
+- [x] `core/domain/entities/Job.ts` - Job aggregate root
+- [x] `core/domain/entities/ContentItem.ts` - Content item entity
+- [x] `core/domain/entities/GeneratedText.ts` - Generated text entity
+- [x] `core/domain/entities/AudioChunk.ts` - Audio chunk entity
+- [x] `core/domain/entities/ChatSession.ts` - Chat session entity
+- [x] `core/domain/entities/ChatMessage.ts` - Chat message entity
+- [x] `core/domain/entities/ErrorLog.ts` - Error log entity
+- [x] `core/domain/entities/UserSettings.ts` - User settings entity
 
 ### Setup & Configuration
 - [x] `.env.example` - Environment variables template
@@ -34,22 +45,6 @@ This document tracks the implementation progress of the 403-file system architec
 - [x] Core dependencies installed (zod, papaparse, @anthropic-ai/sdk)
 
 ## 🚧 In Progress / TODO
-
-### ÉTAPE 2B: Events (Remaining)
-- [ ] 14 more Job events (JobPausedEvent, JobResumedEvent, JobFailedEvent, etc.)
-- [ ] 15 Item events (ItemValidationCompletedEvent, TextGenerationCompletedEvent, etc.)
-- [ ] 4 Chunk events
-- [ ] 3 Error events
-
-### ÉTAPE 2C: Entities
-- [ ] `core/domain/entities/Job.ts` - Job aggregate root
-- [ ] `core/domain/entities/ContentItem.ts` - Content item entity
-- [ ] `core/domain/entities/GeneratedText.ts` - Generated text entity
-- [ ] `core/domain/entities/AudioChunk.ts` - Audio chunk entity
-- [ ] `core/domain/entities/ChatSession.ts` - Chat session entity
-- [ ] `core/domain/entities/ChatMessage.ts` - Chat message entity
-- [ ] `core/domain/entities/ErrorLog.ts` - Error log entity
-- [ ] `core/domain/entities/UserSettings.ts` - User settings entity
 
 ### ÉTAPE 3: Ports (Interfaces)
 - [ ] Repository interfaces (8 files)
@@ -95,7 +90,7 @@ This document tracks the implementation progress of the 403-file system architec
 ## 📊 Progress Overview
 
 - **Foundation**: ~100% complete (5/5 files)
-- **Domain Layer**: ~40% complete (13/40 files)
+- **Domain Layer**: ~100% complete (40/40 files)
 - **Ports**: 0% complete (0/18 files)
 - **Infrastructure**: 0% complete (0/30 files)
 - **Use Cases**: 0% complete (0/24 files)
@@ -104,12 +99,12 @@ This document tracks the implementation progress of the 403-file system architec
 - **API Routes**: 0% complete (0/15 files)
 - **UI**: 0% complete (0/30 files)
 
-**Total Progress**: ~11% complete (18/174 core files estimated)
+**Total Progress**: ~20% complete (45/174 core files estimated)
 
 ## 🎯 Next Priority Files
 
-1. **Entities** - Core domain models (8 files)
-2. **Repository Ports** - Interface definitions (8 files)
+1. **Repository Ports** - Interface definitions (8 files)
+2. **Service Ports** - Interface definitions for external services (10+ files)
 3. **Prisma Repositories** - Data access layer (8 files)
 4. **Key Use Cases** - Business logic (5-10 critical ones)
 5. **DI Container** - Wire everything together (5 files)
