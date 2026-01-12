@@ -52,11 +52,11 @@ This document tracks the implementation progress of the 403-file system architec
 - [x] Event/Queue/Streaming interfaces (8 files)
 
 ### ÉTAPE 4: Infrastructure
-- [ ] Prisma repositories (8 implementations)
-- [ ] External services (6+ services)
-- [ ] Queue system (4 files)
-- [ ] Event system (3 files)
-- [ ] SSE streaming (3 files)
+- [x] Prisma repositories (8 implementations)
+- [x] External services (6+ services)
+- [x] Queue system (4 files)
+- [x] Event system (3 files)
+- [x] SSE streaming (3 files)
 
 ### ÉTAPE 5: Use Cases
 - [ ] Job use cases (6 files)
@@ -93,23 +93,29 @@ This document tracks the implementation progress of the 403-file system architec
 - **Foundation**: ~100% complete (5/5 files)
 - **Domain Layer**: ~100% complete (40/40 files)
 - **Ports**: ~100% complete (33/33 files)
-- **Infrastructure**: 0% complete (0/30 files)
+- **Infrastructure**: ~100% complete (30/30 files)
 - **Use Cases**: 0% complete (0/24 files)
 - **Application**: 0% complete (0/7 files)
 - **DI Container**: 0% complete (0/5 files)
 - **API Routes**: 0% complete (0/15 files)
 - **UI**: 0% complete (0/30 files)
 
-**Total Progress**: ~45% complete (78/174 core files estimated)
+**Total Progress**: ~62% complete (108/174 core files estimated)
 
 ## 🎯 Next Priority Files
 
-1. **Prisma Repositories** - Data access layer (8 files)
-2. **External Services** - AI, TTS, parsing, storage, audio processing (6+ services)
-3. **Queue System** - In-memory/Redis queue + workers (4 files)
-4. **Event System** - Event bus + handlers (3 files)
-5. **SSE Streaming** - Real-time updates to UI (3 files)
-6. **Key Use Cases** - Business logic (5-10 critical ones)
+1. **Use Cases** - Business logic layer (24 files)
+   - Job use cases (6 files)
+   - Content item use cases (5 files)
+   - Chat use cases (3 files)
+   - Other use cases (10+ files)
+2. **Application Layer** - Pipeline orchestration (7 files)
+   - PipelineOrchestrator
+   - Coordinators (3 files)
+   - Workflows (3 files)
+3. **DI Container** - Dependency injection (5 files)
+4. **API Routes** - REST endpoints (15 files)
+5. **UI Components** - React components (30+ files)
 
 ## 📝 Notes
 
