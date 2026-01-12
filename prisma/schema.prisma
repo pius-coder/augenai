@@ -1,0 +1,377 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // file:./dev.db
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum JobStatus {
+  DRAFT           // Brouillon, pas encore démarré
+  VALIDATING      // Validation en cours
+  READY           // Validé, prêt à démarrer
+  PROCESSING      // Génération en cours
+  PAUSED          // Mis en pause manuellement
+  COMPLETED       // Terminé avec succès
+  FAILED          // Échec (erreurs non récupérables)
+  CANCELLED       // Annulé par l'utilisateur
+}
+
+enum ItemStatus {
+  PENDING           // En attente de traitement
+  VALIDATING        // Validation des données
+  GENERATING_TEXT   // Génération du texte via IA
+  CHUNKING          // Découpage du texte
+  GENERATING_AUDIO  // Génération audio des chunks
+  MERGING           // Fusion des chunks audio
+  UPLOADING         // Upload/sauvegarde finale
+  COMPLETED         // Terminé avec succès
+  FAILED            // Échec
+  SKIPPED           // Ignoré (validation échouée)
+}
+
+enum ChunkStatus {
+  PENDING     // En attente
+  PROCESSING  // Génération en cours
+  COMPLETED   // Audio généré
+  FAILED      // Échec génération
+}
+
+enum ContentCategory {
+  OUVERTURE   // Introduction/Opening
+  CORPS       // Corps principal/Body
+  FERMETURE   // Conclusion/Closing
+}
+
+enum PipelineStep {
+  VALIDATION        // Étape de validation
+  TEXT_GENERATION   // Génération texte
+  CHUNKING          // Découpage texte
+  AUDIO_GENERATION  // Génération audio
+  AUDIO_MERGE       // Fusion audio
+  UPLOAD            // Sauvegarde finale
+}
+
+// ============================================================================
+// JOB - Représente un batch de génération
+// ============================================================================
+
+model Job {
+  id        String    @id @default(uuid())
+  name      String    // Nom du job (ex: "Vidéos Janvier 2024")
+  status    JobStatus @default(DRAFT)
+  
+  // Voix unique pour tout le job
+  voiceId   String?   // ID de la voix InWorld sélectionnée
+  voiceName String?   // Nom de la voix pour affichage
+  
+  // Prompts configurés pour ce job
+  systemPrompt       String   @default("") // Prompt système
+  userPromptTemplate String   @default("") // Template prompt user avec {{variables}}
+  
+  // Configuration
+  maxChunkSize       Int      @default(2000) // Limite InWorld
+  silenceBetweenChunks Int    @default(500)  // ms de silence entre chunks
+  
+  // Statistiques
+  totalItems     Int @default(0)
+  completedItems Int @default(0)
+  failedItems    Int @default(0)
+  
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  startedAt   DateTime? // Quand la génération a démarré
+  completedAt DateTime? // Quand terminé
+  
+  // Relations
+  items      ContentItem[]
+  errorLogs  ErrorLog[]
+  
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// CONTENT ITEM - Un élément de contenu (une ligne CSV)
+// ============================================================================
+
+model ContentItem {
+  id       String     @id @default(uuid())
+  jobId    String
+  job      Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  // Position dans le job
+  rowIndex Int        // Index de la ligne (pour ordre)
+  
+  // Status et progression
+  status      ItemStatus   @default(PENDING)
+  currentStep PipelineStep @default(VALIDATION)
+  
+  // Données CSV originales
+  titre     String
+  details   String     // Texte long (description)
+  category  ContentCategory
+  reference String?    // Mots-clés/références optionnels
+  
+  // Texte généré par IA
+  generatedText String?  // Texte final après génération
+  
+  // Audio final
+  finalAudioPath String?  // Chemin vers l'audio fusionné
+  audioDuration  Float?   // Durée en secondes
+  
+  // Retry tracking
+  retryCount Int @default(0)
+  maxRetries Int @default(3)
+  
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  startedAt   DateTime? // Début du processing
+  completedAt DateTime? // Fin du processing
+  
+  // Relations
+  chunks     AudioChunk[]
+  textChunks TextChunk[]
+  errorLogs  ErrorLog[]
+  
+  @@unique([jobId, rowIndex])
+  @@index([jobId])
+  @@index([status])
+  @@index([jobId, status])
+}
+
+// ============================================================================
+// TEXT CHUNK - Portion de texte découpée (avant TTS)
+// ============================================================================
+
+model TextChunk {
+  id     String @id @default(uuid())
+  itemId String
+  item   ContentItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  
+  index     Int    // Ordre du chunk dans l'item
+  text      String // Texte du chunk
+  charCount Int    // Nombre de caractères
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  
+  // Relation avec le chunk audio correspondant
+  audioChunk AudioChunk?
+  
+  @@unique([itemId, index])
+  @@index([itemId])
+}
+
+// ============================================================================
+// AUDIO CHUNK - Fichier audio pour un chunk de texte
+// ============================================================================
+
+model AudioChunk {
+  id     String @id @default(uuid())
+  itemId String
+  item   ContentItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  
+  // Lien avec le text chunk source
+  textChunkId String    @unique
+  textChunk   TextChunk @relation(fields: [textChunkId], references: [id], onDelete: Cascade)
+  
+  index  Int         // Ordre dans l'item
+  status ChunkStatus @default(PENDING)
+  
+  // Audio généré
+  audioPath String?  // Chemin fichier audio local
+  duration  Float?   // Durée en secondes
+  fileSize  Int?     // Taille en bytes
+  
+  // Métadonnées génération
+  voiceId String?    // ID voix utilisée
+  
+  // Retry tracking
+  retryCount Int     @default(0)
+  lastError  String? // Dernière erreur rencontrée
+  
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+  
+  @@unique([itemId, index])
+  @@index([itemId])
+  @@index([status])
+}
+
+// ============================================================================
+// ERROR LOG - Journal des erreurs pour retry/debug
+// ============================================================================
+
+model ErrorLog {
+  id String @id @default(uuid())
+  
+  // Contexte de l'erreur
+  jobId   String?
+  job     Job?         @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  itemId  String?
+  item    ContentItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  
+  // Détails de l'erreur
+  step       PipelineStep // Étape où l'erreur s'est produite
+  errorCode  String?      // Code erreur (ex: RATE_LIMIT, API_ERROR)
+  message    String       // Message d'erreur
+  details    String?      // Détails supplémentaires (stack trace, etc.)
+  
+  // Retry info
+  isRetryable Boolean @default(true)
+  wasRetried  Boolean @default(false)
+  retriedAt   DateTime?
+  
+  // Timestamp
+  createdAt DateTime @default(now())
+  
+  @@index([jobId])
+  @@index([itemId])
+  @@index([step])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// USER SETTINGS - Configuration utilisateur globale
+// ============================================================================
+
+model UserSettings {
+  id String @id @default("default") // Un seul enregistrement
+  
+  // Channel settings (pour les variables de prompt)
+  channelName        String @default("")
+  channelDescription String @default("")
+  channelTone        String @default("professionnel") // professionnel, décontracté, éducatif, custom
+  channelLanguage    String @default("fr")
+  
+  // Génération settings
+  defaultVoiceId       String @default("")
+  defaultMaxChunkSize  Int    @default(2000)
+  defaultSilenceBetween Int   @default(500)
+  defaultAudioFormat   String @default("mp3")
+  defaultAutoRetry     Int    @default(3)
+  
+  // UI preferences
+  theme     String @default("system") // light, dark, system
+  sidebarOpen Boolean @default(true)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================================
+// PROMPT TEMPLATE - Templates de prompts réutilisables
+// ============================================================================
+
+model PromptTemplate {
+  id String @id @default(uuid())
+  
+  name        String  // Nom du template
+  description String? // Description
+  
+  // Type de prompt
+  isSystemPrompt Boolean @default(false) // true = system, false = user
+  
+  // Contenu du template avec variables {{variable}}
+  template String
+  
+  // Variables disponibles dans ce template
+  availableVariables String // JSON array: ["titre", "details", "category", ...]
+  
+  // Métadonnées
+  isDefault  Boolean @default(false) // Template par défaut (non supprimable)
+  isActive   Boolean @default(true)
+  
+  // Catégorie pour organisation
+  category String? // ex: "youtube", "podcast", "general"
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([isSystemPrompt])
+  @@index([isDefault])
+  @@index([category])
+}
+
+// ============================================================================
+// VOICE CACHE - Cache des voix disponibles (évite appels API répétés)
+// ============================================================================
+
+model VoiceCache {
+  id String @id // Voice ID from InWorld
+  
+  name        String
+  description String?
+  language    String?
+  gender      String? // male, female, neutral
+  
+  // Preview
+  previewUrl String?
+  
+  // Métadonnées
+  provider String @default("inworld")
+  
+  // Cache control
+  lastFetchedAt DateTime @default(now())
+  isAvailable   Boolean  @default(true)
+  
+  @@index([provider])
+  @@index([language])
+}
+
+// ============================================================================
+// CHAT SESSION - Sessions de chat avec l'IA (optionnel mais utile)
+// ============================================================================
+
+model ChatSession {
+  id String @id @default(uuid())
+  
+  name String? // Nom optionnel de la session
+  
+  // Contexte de travail
+  activeJobId String? // Job en cours de travail
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  messages ChatMessage[]
+  
+  @@index([createdAt])
+}
+
+model ChatMessage {
+  id        String @id @default(uuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  role    String // "user" | "assistant"
+  content String
+  
+  // Actions proposées par l'IA (JSON)
+  actions String? // JSON: [{"label": "Valider", "action": "validate", "params": {}}]
+  
+  // Métadonnées
+  tokenCount Int? // Nombre de tokens utilisés
+  
+  // Timestamp
+  createdAt DateTime @default(now())
+  
+  @@index([sessionId])
+  @@index([createdAt])
+}
