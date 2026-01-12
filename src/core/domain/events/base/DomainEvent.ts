@@ -4,7 +4,7 @@
 
 import { EventMetadata } from './EventMetadata';
 
-export interface DomainEvent<T = any> {
+export interface DomainEvent<T = unknown> {
   readonly eventType: string;
   readonly eventId: string;
   readonly occurredAt: Date;
@@ -12,7 +12,7 @@ export interface DomainEvent<T = any> {
   readonly payload: T;
 }
 
-export abstract class BaseDomainEvent<T = any> implements DomainEvent<T> {
+export abstract class BaseDomainEvent<T = unknown> implements DomainEvent<T> {
   public readonly eventId: string;
   public readonly occurredAt: Date;
 

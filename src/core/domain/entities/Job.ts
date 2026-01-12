@@ -161,7 +161,7 @@ export class Job {
     this.updatedAt = new Date();
   }
 
-  public fail(reason?: string): void {
+  public fail(): void {
     this._status = JobStatus.FAILED;
     this.completedAt = new Date();
     this.updatedAt = new Date();
