@@ -1,66 +1,66 @@
 // src/app/api/jobs/route.ts
-// Job API routes: POST /api/jobs, GET /api/jobs
-
 import { NextRequest, NextResponse } from 'next/server';
-import { container } from '@/infrastructure/di/Container';
 import { CreateJobUseCase } from '@/core/domain/use-cases/job/CreateJobUseCase';
-import { ListJobsUseCase } from '@/core/domain/use-cases/job/ListJobsUseCase';
-import { JobStatus } from '@/core/domain/value-objects/JobStatus';
-import { Logger } from '@/shared/lib/logger';
+import { serviceProvider } from '@/infrastructure/di/ServiceProvider';
+import { z } from 'zod';
 
-const logger = Logger.getInstance();
+const CreateJobSchema = z.object({
+  name: z.string().min(1),
+  voiceId: z.string().optional(),
+  stability: z.number().min(0).max(1).optional(),
+  similarityBoost: z.number().min(0).max(1).optional(),
+  systemPrompt: z.string().optional(),
+  userPromptTemplate: z.string().optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const validatedData = CreateJobSchema.parse(body);
     
-    const createJobUseCase = container.get<CreateJobUseCase>('CreateJobUseCase');
-    const result = await createJobUseCase.execute(body);
-
-    logger.info('Job created', { jobId: result.job.id });
-
+    const createJobUseCase = serviceProvider.getService<CreateJobUseCase>('CreateJobUseCase');
+    const result = await createJobUseCase.execute(validatedData);
+    
     return NextResponse.json({
       success: true,
-      data: result.job.toJSON(),
+      job: result.job,
     }, { status: 201 });
+    
   } catch (error) {
-    logger.error('Failed to create job', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({
+        success: false,
+        errors: error.errors.map(e => e.message),
+      }, { status: 400 });
+    }
     
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
-    }, { status: 400 });
+    }, { status: 500 });
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const status = searchParams.get('status') as JobStatus | null;
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
     const limit = searchParams.get('limit');
     const offset = searchParams.get('offset');
-    const orderByCreatedAt = searchParams.get('order') as 'asc' | 'desc' | null;
-
-    const listJobsUseCase = container.get<ListJobsUseCase>('ListJobsUseCase');
-    const result = await listJobsUseCase.execute({
+    
+    const listJobsUseCase = serviceProvider.getService('ListJobsUseCase');
+    const jobs = await listJobsUseCase.execute({
       status: status || undefined,
-      limit: limit ? parseInt(limit) : 20,
-      offset: offset ? parseInt(offset) : 0,
-      orderByCreatedAt: orderByCreatedAt || 'desc',
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
     });
-
+    
     return NextResponse.json({
       success: true,
-      data: {
-        jobs: result.jobs.map(j => j.toJSON()),
-        total: result.total,
-        limit: result.limit,
-        offset: result.offset,
-      },
+      jobs,
     });
-  } catch (error) {
-    logger.error('Failed to list jobs', error);
     
+  } catch (error) {
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
