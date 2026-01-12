@@ -189,7 +189,7 @@ export class Job {
     this.updatedAt = new Date();
 
     if (this.completedItems + this.failedItems >= this.totalItems) {
-      this.fail('Some items failed');
+      this.fail();
     }
   }
 

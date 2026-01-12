@@ -244,26 +244,41 @@ export class ErrorFactory {
   }
 
   // Wrap Prisma errors
-  static fromPrismaError(error: any): AppError {
+  static fromPrismaError(error: unknown): AppError {
+    type PrismaErrorLike = {
+      code?: string;
+      message?: string;
+      meta?: {
+        target?: unknown;
+        cause?: unknown;
+      };
+    };
+
+    const prismaError = error as PrismaErrorLike;
+
     // Prisma error codes: https://www.prisma.io/docs/reference/api-reference/error-reference
-    if (error.code === 'P2002') {
+    if (prismaError.code === 'P2002') {
       // Unique constraint violation
-      const target = error.meta?.target?.[0] || 'field';
+      const target = Array.isArray(prismaError.meta?.target)
+        ? String(prismaError.meta?.target[0] ?? 'field')
+        : 'field';
+
       return this.duplicate('Record', target, 'existing value');
     }
 
-    if (error.code === 'P2025') {
+    if (prismaError.code === 'P2025') {
       // Record not found
-      return new NotFoundError('Record', error.meta?.cause || 'unknown');
+      const cause = prismaError.meta?.cause ? String(prismaError.meta.cause) : 'unknown';
+      return new NotFoundError('Record', cause);
     }
 
-    if (error.code === 'P2003') {
+    if (prismaError.code === 'P2003') {
       // Foreign key constraint violation
       return this.database('Foreign key constraint violation');
     }
 
     // Generic database error
-    return this.database(error.message || 'Database operation failed');
+    return this.database(prismaError.message || 'Database operation failed');
   }
 }
 

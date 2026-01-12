@@ -7,7 +7,6 @@ import { envConfig } from '../config/env';
 
 // Extend the global type to include prisma
 declare global {
-  // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
 }
 
