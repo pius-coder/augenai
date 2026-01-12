@@ -1,7 +1,6 @@
 // src/infrastructure/di/Container.ts
 // Main DI container using constructor injection
 
-import { PrismaClient } from '@prisma/client';
 import { prisma } from '@/shared/lib/prisma';
 
 // Repositories
@@ -59,7 +58,7 @@ import { PipelineOrchestrator } from '@/application/orchestrators/PipelineOrches
 
 export class Container {
   private static instance: Container;
-  private services = new Map<string, any>();
+  private services = new Map<string, unknown>();
 
   private constructor() {
     this.registerDependencies();
